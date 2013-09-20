@@ -1,6 +1,6 @@
 GLOBAL
 Ka			0.1
-Kd			1.0
+Kd			0.9
 Ks			0.5
 ambient		1 1 1
 

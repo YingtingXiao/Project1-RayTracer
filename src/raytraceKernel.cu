@@ -132,9 +132,11 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, gl
   int y = (blockIdx.y * blockDim.y) + threadIdx.y;
   int index = x + (y * resolution.x);
 
+	glm::vec3 color;
+
   if((x<=resolution.x && y<=resolution.y)){
 		if (rayDepth > MAXDEPTH) {
-			colors[index] = glm::vec3(0, 0, 0);
+			color = glm::vec3(0, 0, 0);
 		}
 		else {
 			ray r = raycastFromCameraKernel(resolution, time, x, y, cam.position, cam.view, cam.up, cam.fov);
@@ -158,7 +160,7 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, gl
 				material mtl = materials[geoms[minIdx].materialid]; // does caching make it faster?
 				//TODO: MAKE THIS BRANCH MORE EFFICIENT
 				if (mtl.emittance > THRESHOLD) { // light
-					colors[index] = glm::clamp(mtl.color * mtl.emittance, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
+					color = glm::clamp(mtl.color * mtl.emittance, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
 				}
 				else {
 					if (true) {
@@ -170,8 +172,7 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, gl
 						
 						for (int i=0; i<numberOfLights; ++i) {
 							staticGeom light = geoms[lightIds[i]];
-							glm::vec3 pointOnLight = light.translation; // point light
-							//glm::vec3 pointOnLight = getRandomPointOnGeom(light, index * time);
+							glm::vec3 pointOnLight = getRandomPointOnGeom(light, index * time); // area light
 							float distToLight = glm::distance(minIntersection, pointOnLight);
 							glm::vec3 L = glm::normalize(minIntersection - pointOnLight); // direction from light to point
 							ray shadowFeeler;
@@ -202,7 +203,7 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, gl
 								}
 
 								if (mtl.specularExponent > THRESHOLD) {
-									//compute specular color
+									// compute specular color
 									glm::vec3 LR; // reflected light direction
 									if (glm::length(-L - minNormal) < THRESHOLD)
 										LR = minNormal;
@@ -220,15 +221,16 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, gl
 						}
 						diffuse = glm::clamp(diffuse, glm::vec3(0, 0, 0), mtl.color);
 						specular = glm::clamp(specular, glm::vec3(0, 0, 0), mtl.specularColor);
-						colors[index] = glm::clamp(globalAttr.Ka * ambient + globalAttr.Kd * diffuse + globalAttr.Ks * specular, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
+						color = glm::clamp(globalAttr.Ka * ambient + globalAttr.Kd * diffuse + globalAttr.Ks * specular, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
 					}
 				}
 			}
 			else {
-				colors[index] = glm::vec3(0, 0, 0);
+				color = glm::vec3(0, 0, 0);
 			}
 		}
   }
+	colors[index] = (colors[index] * (time-1) + color)/time;
 }
 
 //TODO: FINISH THIS FUNCTION

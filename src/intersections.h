@@ -243,9 +243,9 @@ __host__ __device__ glm::vec3 getRadiuses(staticGeom geom){
 __host__ __device__ glm::vec3 getRandomPointOnGeom(staticGeom geom, float randomSeed) {
 	switch (geom.type) {
 		case GEOMTYPE::SPHERE:
-			return getRandomPointOnCube(geom, randomSeed);
-		case GEOMTYPE::CUBE:
 			return getRandomPointOnSphere(geom, randomSeed);
+		case GEOMTYPE::CUBE:
+			return getRandomPointOnCube(geom, randomSeed);
 		case GEOMTYPE::MESH:
 			// don't need to do mesh lights
 			return glm::vec3(0, 0, 0);
