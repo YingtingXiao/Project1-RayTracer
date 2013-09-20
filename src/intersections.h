@@ -12,14 +12,19 @@
 #include "utilities.h"
 #include <thrust/random.h>
 
+#define THRESHOLD 0.001
+
 //Some forward declarations
 __host__ __device__ glm::vec3 getPointOnRay(ray r, float t);
 __host__ __device__ glm::vec3 multiplyMV(cudaMat4 m, glm::vec4 v);
 __host__ __device__ glm::vec3 getSignOfRay(ray r);
 __host__ __device__ glm::vec3 getInverseDirectionOfRay(ray r);
+__host__ __device__ float geomIntersectionTest(staticGeom sphere, ray r, glm::vec3& intersectionPoint, glm::vec3& normal);
 __host__ __device__ float boxIntersectionTest(staticGeom sphere, ray r, glm::vec3& intersectionPoint, glm::vec3& normal);
 __host__ __device__ float sphereIntersectionTest(staticGeom sphere, ray r, glm::vec3& intersectionPoint, glm::vec3& normal);
+__host__ __device__ glm::vec3 getRandomPointOnGeom(staticGeom geom, float randomSeed);
 __host__ __device__ glm::vec3 getRandomPointOnCube(staticGeom cube, float randomSeed);
+__host__ __device__ glm::vec3 getRandomPointOnSphere(staticGeom sphere, float randomSeed);
 
 //Handy dandy little hashing function that provides seeds for random number generation
 __host__ __device__ unsigned int hash(unsigned int a){
@@ -68,11 +73,120 @@ __host__ __device__ glm::vec3 getSignOfRay(ray r){
   return glm::vec3((int)(inv_direction.x < 0), (int)(inv_direction.y < 0), (int)(inv_direction.z < 0));
 }
 
+// Geometry intersection test, call sphere/box/mesh intersection test functions depending the type of the geometry
+__host__ __device__ float geomIntersectionTest(staticGeom geom, ray r, glm::vec3& intersectionPoint, glm::vec3& normal) {
+	switch (geom.type) {
+		case GEOMTYPE::SPHERE:
+			return sphereIntersectionTest(geom, r, intersectionPoint, normal);
+		case GEOMTYPE::CUBE:
+			return boxIntersectionTest(geom, r, intersectionPoint, normal);
+		case GEOMTYPE::MESH:
+			// TODO: implement meshIntersectionTest
+			return -1;
+		default:
+			return -1;
+	}
+}
+
 //TODO: IMPLEMENT THIS FUNCTION
 //Cube intersection test, return -1 if no intersection, otherwise, distance to intersection
 __host__ __device__ float boxIntersectionTest(staticGeom box, ray r, glm::vec3& intersectionPoint, glm::vec3& normal){
+	
+  glm::vec3 ro = multiplyMV(box.inverseTransform, glm::vec4(r.origin,1.0f));
+  glm::vec3 rd = glm::normalize(multiplyMV(box.inverseTransform, glm::vec4(r.direction,0.0f))); // why not transpose(inverse)?
 
-    return -1;
+	// ray box intersection
+	bool intersect = true;
+	float tnear = FLT_MIN;
+	float tfar = FLT_MAX;
+	float t1, t2;
+	// left and right faces
+	if (abs(rd[0]) > THRESHOLD) {
+		t1 = (-0.5 - ro[0]) / rd[0];
+		t2 = (0.5 - ro[0]) / rd[0];
+		if (t1 > t2) {
+			float temp = t1;
+			t1 = t2;
+			t2 = temp;
+		}
+		if (tnear < t1) {
+			tnear = t1;
+		}
+		if (tfar > t2) {
+			tfar = t2;
+		}
+	}
+	else if (ro[0] <= -0.5 || ro[0] >= 0.5) {
+		intersect = false;
+	}
+	// top and bottom faces
+	if (abs(rd[1]) > THRESHOLD) {
+		t1 = (-0.5 - ro[1]) / rd[1];
+		t2 = (0.5 - ro[1]) / rd[1];
+		if (t1 > t2) {
+			float temp = t1;
+			t1 = t2;
+			t2 = temp;
+		}
+		if (tnear < t1) {
+			tnear = t1;
+		}
+		if (tfar > t2) {
+			tfar = t2;
+		}
+	}
+	else if (ro[1] <= -0.5 || ro[1] >= 0.5) {
+		intersect = false;
+	}
+	// front and rear faces
+	if (abs(rd[2]) > THRESHOLD) {
+		t1 = (-0.5 - ro[2]) / rd[2];
+		t2 = (0.5 - ro[2]) / rd[2];
+		if (t1 > t2) {
+			float temp = t1;
+			t1 = t2;
+			t2 = temp;
+		}
+		if (tnear < t1) {
+			tnear = t1;
+		}
+		if (tfar > t2) {
+			tfar = t2;
+		}
+	}
+	else if (ro[2] <= -0.5 || ro[2] >= 0.5) {
+		intersect = false;
+	}
+	if (!intersect || tnear > tfar + THRESHOLD || tnear < THRESHOLD) {
+		return -1;
+	}
+	else {
+		glm::vec3 p = ro + rd * tnear;
+		glm::vec3 n;
+		if (abs(p[0]+0.5) < THRESHOLD) {
+			n = glm::vec3(-1, 0, 0);
+		}
+		else if (abs(p[0]-0.5) < THRESHOLD) {
+			n = glm::vec3(1, 0, 0);
+		}
+		else if (abs(p[1]+0.5) < THRESHOLD) {
+			n = glm::vec3(0, -1, 0);
+		}
+		else if (abs(p[1]-0.5) < THRESHOLD) {
+			n = glm::vec3(0, 1, 0);
+		}
+		else if (abs(p[2]+0.5) < THRESHOLD) {
+			n = glm::vec3(0, 0, -1);
+		}
+		else {
+			n = glm::vec3(0, 0, 1);
+		}
+
+		intersectionPoint = multiplyMV(box.transform, glm::vec4(p, 1.0f));
+		normal = glm::normalize(multiplyMV(box.transform, glm::vec4(n, 0.0f)));
+
+		return glm::length(ro - intersectionPoint);
+	}
 }
 
 //LOOK: Here's an intersection test example from a sphere. Now you just need to figure out cube and, optionally, triangle.
@@ -125,6 +239,21 @@ __host__ __device__ glm::vec3 getRadiuses(staticGeom geom){
     float yradius = glm::distance(origin, ymax);
     float zradius = glm::distance(origin, zmax);
     return glm::vec3(xradius, yradius, zradius);
+}
+
+// Get random point on geometry, call getRandomPointOnCube or getRandomPointOnSphere
+__host__ __device__ glm::vec3 getRandomPointOnGeom(staticGeom geom, float randomSeed) {
+	switch (geom.type) {
+		case GEOMTYPE::SPHERE:
+			return getRandomPointOnCube(geom, randomSeed);
+		case GEOMTYPE::CUBE:
+			return getRandomPointOnSphere(geom, randomSeed);
+		case GEOMTYPE::MESH:
+			// don't need to do mesh lights
+			return glm::vec3(0, 0, 0);
+		default:
+			return glm::vec3(0, 0, 0);
+	}
 }
 
 //LOOK: Example for generating a random point on an object using thrust.
