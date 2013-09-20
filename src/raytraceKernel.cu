@@ -155,24 +155,24 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, in
 							//glm::vec3 pointOnLight = getRandomPointOnGeom(light, index * time);
 							float distToLight = glm::distance(minIntersection, pointOnLight);
 							glm::vec3 L = glm::normalize(pointOnLight - minIntersection); // direction from point to light
-							//ray shadowFeeler;
-							//shadowFeeler.origin = minIntersection;
-							//shadowFeeler.direction = L;
+							ray shadowFeeler;
+							shadowFeeler.origin = minIntersection + L * (float)THRESHOLD;
+							shadowFeeler.direction = L;
 
-							//// find out if the ray intersects other objects
-							//bool shadow = false;
-							//for (int j=0; j<numberOfGeoms; ++j) {
-							//	if (j != lightIds[i]) {
-							//		glm::vec3 intersection, normal;
-							//		float dist = geomIntersectionTest(geoms[i], shadowFeeler, intersection, normal);
-							//		if (abs(dist+1) > THRESHOLD && dist < distToLight) {
-							//			shadow = true;
-							//			break;
-							//		}
-							//	}
-							//}
-
-							if (true) {
+							// find out if the ray intersects other objects
+							bool shadow = false;
+							for (int j=0; j<numberOfGeoms; ++j) {
+								if (j != lightIds[i]) {
+									glm::vec3 intersection, normal;
+									float dist = geomIntersectionTest(geoms[j], shadowFeeler, intersection, normal);
+									if (abs(dist+1) > THRESHOLD && dist < distToLight) {
+										shadow = true;
+										break;
+									}
+								}
+							}
+							
+							if (!shadow) {
 								material lightMtl = materials[light.materialid];
 								glm::vec3 lightColor = glm::clamp(lightMtl.color * lightMtl.emittance, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
 								lightColor *= glm::clamp(glm::dot(L, minNormal), 0.0f, 1.0f);
@@ -180,6 +180,9 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, in
 								if (totalLightColor[0] > 1 && totalLightColor[1] > 1 && totalLightColor[2] > 1) {
 									break;
 								}
+							}
+							else {
+								colors[index] = glm::vec3(0, 0, 0);
 							}
 						}
 						totalLightColor = glm::clamp(totalLightColor, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));

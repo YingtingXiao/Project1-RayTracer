@@ -43,8 +43,8 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\src\raytraceKernel.cu">
-      <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Release (v5.5)|Win32'">true</GPUDebugInfo>
-      <HostDebugInfo Condition="'$(Configuration)|$(Platform)'=='Release (v5.5)|Win32'">true</HostDebugInfo>
+      <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Release (v5.5)|Win32'">false</GPUDebugInfo>
+      <HostDebugInfo Condition="'$(Configuration)|$(Platform)'=='Release (v5.5)|Win32'">false</HostDebugInfo>
       <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Debug (v5.5)|Win32'">true</GPUDebugInfo>
       <HostDebugInfo Condition="'$(Configuration)|$(Platform)'=='Debug (v5.5)|Win32'">true</HostDebugInfo>
     </CudaCompile>

@@ -12,8 +12,6 @@
 #include "utilities.h"
 #include <thrust/random.h>
 
-#define THRESHOLD 0.001
-
 //Some forward declarations
 __host__ __device__ glm::vec3 getPointOnRay(ray r, float t);
 __host__ __device__ glm::vec3 multiplyMV(cudaMat4 m, glm::vec4 v);
