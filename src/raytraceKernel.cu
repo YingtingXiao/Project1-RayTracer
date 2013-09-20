@@ -135,12 +135,10 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, gl
 	glm::vec3 color;
 
   if((x<=resolution.x && y<=resolution.y)){
-		if (rayDepth > MAXDEPTH) {
-			color = glm::vec3(0, 0, 0);
-		}
-		else {
-			ray r = raycastFromCameraKernel(resolution, time, x, y, cam.position, cam.view, cam.up, cam.fov);
+		ray r = raycastFromCameraKernel(resolution, time, x, y, cam.position, cam.view, cam.up, cam.fov);
+		glm::vec3 baseColor(1, 1, 1);
 
+		for (int iteration=0; iteration<MAXDEPTH; ++iteration) {
 			// find the closest intersected geometry
 			int minIdx = -1;
 			float minDist = FLT_MAX;
@@ -163,8 +161,8 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, gl
 					color = glm::clamp(mtl.color * mtl.emittance, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
 				}
 				else {
-					if (true) {
-					//if (mtl.hasReflective < THRESHOLD && mtl.hasRefractive < THRESHOLD) { // diffuse surface
+					//if (true) {
+					if (mtl.hasReflective < THRESHOLD && mtl.hasRefractive < THRESHOLD) { // diffuse surface
 						glm::vec3 ambient = componentMultiply(globalAttr.ambient, mtl.color);
 						ambient = glm::clamp(ambient, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
 						glm::vec3 diffuse(0, 0, 0);
@@ -222,6 +220,28 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, gl
 						diffuse = glm::clamp(diffuse, glm::vec3(0, 0, 0), mtl.color);
 						specular = glm::clamp(specular, glm::vec3(0, 0, 0), mtl.specularColor);
 						color = glm::clamp(globalAttr.Ka * ambient + globalAttr.Kd * diffuse + globalAttr.Ks * specular, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
+						color = componentMultiply(color, baseColor);
+						break;
+					}
+					else {
+						if (mtl.hasReflective) {
+							glm::vec3 VR; // reflected ray direction
+							if (glm::length(-r.direction - minNormal) < THRESHOLD) {
+								VR = minNormal;
+							}
+							else if (abs(glm::dot(-r.direction, minNormal)) < THRESHOLD) {
+								VR = r.direction;
+							}
+							else {
+								VR = glm::normalize(r.direction - 2.0f * glm::dot(r.direction, minNormal) * minNormal);
+							}
+							r.origin = minIntersection + VR * (float)THRESHOLD;
+							r.direction = VR;
+							baseColor = componentMultiply(baseColor, mtl.color);
+						}
+						else {
+							break;
+						}
 					}
 				}
 			}
