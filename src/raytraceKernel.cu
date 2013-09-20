@@ -31,7 +31,21 @@ void checkCUDAError(const char *msg) {
     fprintf(stderr, "Cuda error: %s: %s.\n", msg, cudaGetErrorString( err) ); 
     exit(EXIT_FAILURE); 
   }
-} 
+}
+
+//---------------------------------------------
+//--------------Helper functions---------------
+//---------------------------------------------
+
+// Component multiplication of two vectors
+__host__ __device__ glm::vec3 componentMultiply(glm::vec3 a, glm::vec3 b) {
+	return glm::vec3(a[0] * b[0], a[1] * b[1], a[2] * b[2]);
+}
+
+// Returns true if every component of a is greater than the corresponding component of b
+__host__ __device__ bool componentCompare(glm::vec3 a, glm::vec3 b) {
+	return (a[0] > b[0] && a[1] > b[1] && a[2] > b[2]);
+}
 
 //LOOK: This function demonstrates how to use thrust for random number generation on the GPU!
 //Function that generates static.
@@ -111,7 +125,7 @@ __global__ void sendImageToPBO(uchar4* PBOpos, glm::vec2 resolution, glm::vec3* 
 
 //TODO: IMPLEMENT THIS FUNCTION
 //Core raytracer kernel
-__global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, int rayDepth, glm::vec3* colors,
+__global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, globalAttributes globalAttr, int rayDepth, glm::vec3* colors,
 														staticGeom* geoms, int numberOfGeoms, material* materials, int* lightIds, int numberOfLights){
 
   int x = (blockIdx.x * blockDim.x) + threadIdx.x;
@@ -142,22 +156,27 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, in
 
 			if (minIdx != -1) {
 				material mtl = materials[geoms[minIdx].materialid]; // does caching make it faster?
+				//TODO: MAKE THIS BRANCH MORE EFFICIENT
 				if (mtl.emittance > THRESHOLD) { // light
 					colors[index] = glm::clamp(mtl.color * mtl.emittance, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
 				}
 				else {
 					if (true) {
 					//if (mtl.hasReflective < THRESHOLD && mtl.hasRefractive < THRESHOLD) { // diffuse surface
-						glm::vec3 totalLightColor(0, 0, 0);
+						glm::vec3 ambient = componentMultiply(globalAttr.ambient, mtl.color);
+						ambient = glm::clamp(ambient, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
+						glm::vec3 diffuse(0, 0, 0);
+						glm::vec3 specular(0, 0, 0);
+						
 						for (int i=0; i<numberOfLights; ++i) {
 							staticGeom light = geoms[lightIds[i]];
-							glm::vec3 pointOnLight = light.translation;
+							glm::vec3 pointOnLight = light.translation; // point light
 							//glm::vec3 pointOnLight = getRandomPointOnGeom(light, index * time);
 							float distToLight = glm::distance(minIntersection, pointOnLight);
-							glm::vec3 L = glm::normalize(pointOnLight - minIntersection); // direction from point to light
+							glm::vec3 L = glm::normalize(minIntersection - pointOnLight); // direction from light to point
 							ray shadowFeeler;
-							shadowFeeler.origin = minIntersection + L * (float)THRESHOLD;
-							shadowFeeler.direction = L;
+							shadowFeeler.origin = minIntersection + (-L) * (float)THRESHOLD;
+							shadowFeeler.direction = -L;
 
 							// find out if the ray intersects other objects
 							bool shadow = false;
@@ -175,18 +194,33 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, in
 							if (!shadow) {
 								material lightMtl = materials[light.materialid];
 								glm::vec3 lightColor = glm::clamp(lightMtl.color * lightMtl.emittance, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
-								lightColor *= glm::clamp(glm::dot(L, minNormal), 0.0f, 1.0f);
-								totalLightColor += lightColor;
-								if (totalLightColor[0] > 1 && totalLightColor[1] > 1 && totalLightColor[2] > 1) {
+								
+								// compute diffuse color
+								diffuse += componentMultiply(lightColor, mtl.color) * glm::clamp(glm::dot(-L, minNormal), 0.0f, 1.0f);
+								if (componentCompare(diffuse, mtl.color)) {
 									break;
 								}
-							}
-							else {
-								colors[index] = glm::vec3(0, 0, 0);
+
+								if (mtl.specularExponent > THRESHOLD) {
+									//compute specular color
+									glm::vec3 LR; // reflected light direction
+									if (glm::length(-L - minNormal) < THRESHOLD)
+										LR = minNormal;
+									else if (abs(glm::dot(-L, minNormal)) < THRESHOLD)
+										LR = L;
+									else
+										LR = glm::normalize(L - 2.0f * glm::dot(L, minNormal) * minNormal);
+									specular += componentMultiply(lightColor, mtl.specularColor)
+										* pow(glm::clamp(glm::dot(LR, -r.direction), 0.0f, 1.0f), mtl.specularExponent);
+									if (componentCompare(specular, mtl.specularColor)) {
+										break;
+									}
+								}
 							}
 						}
-						totalLightColor = glm::clamp(totalLightColor, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
-						colors[index] = glm::vec3(mtl.color[0] * totalLightColor[0], mtl.color[1] * totalLightColor[1], mtl.color[2] * totalLightColor[2]);
+						diffuse = glm::clamp(diffuse, glm::vec3(0, 0, 0), mtl.color);
+						specular = glm::clamp(specular, glm::vec3(0, 0, 0), mtl.specularColor);
+						colors[index] = glm::clamp(globalAttr.Ka * ambient + globalAttr.Kd * diffuse + globalAttr.Ks * specular, glm::vec3(0, 0, 0), glm::vec3(1, 1, 1));
 					}
 				}
 			}
@@ -199,7 +233,8 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, in
 
 //TODO: FINISH THIS FUNCTION
 // Wrapper for the __global__ call that sets up the kernel calls and does a ton of memory management
-void cudaRaytraceCore(uchar4* PBOpos, camera* renderCam, int frame, int iterations, material* materials, int numberOfMaterials, geom* geoms, int numberOfGeoms){
+void cudaRaytraceCore(uchar4* PBOpos, camera* renderCam, globalAttributes globalAttr, int frame, int iterations,
+											material* materials, int numberOfMaterials, geom* geoms, int numberOfGeoms){
   
   int traceDepth = 1; //determines how many bounces the raytracer traces
 
@@ -265,7 +300,7 @@ void cudaRaytraceCore(uchar4* PBOpos, camera* renderCam, int frame, int iteratio
   cam.fov = renderCam->fov;
 
   //kernel launches
-  raytraceRay<<<fullBlocksPerGrid, threadsPerBlock>>>(renderCam->resolution, (float)iterations, cam, traceDepth, cudaimage,
+	raytraceRay<<<fullBlocksPerGrid, threadsPerBlock>>>(renderCam->resolution, (float)iterations, cam, globalAttr, traceDepth, cudaimage,
 		cudageoms, numberOfGeoms, cudamtls, cudalights, lightIds.size());
 
   sendImageToPBO<<<fullBlocksPerGrid, threadsPerBlock>>>(PBOpos, renderCam->resolution, cudaimage);
