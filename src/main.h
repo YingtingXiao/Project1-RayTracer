@@ -80,6 +80,7 @@ int main(int argc, char** argv);
 //-------------------------------
 
 void runCuda();
+void clearImage();
 
 #ifdef __APPLE__
 	void display();

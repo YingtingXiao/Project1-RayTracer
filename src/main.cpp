@@ -161,18 +161,26 @@ void runCuda(){
       }
     }
     if(targetFrame<renderCam->frames-1){
-
-      //clear image buffer and move onto next frame
-      targetFrame++;
-      iterations = 0;
-      for(int i=0; i<renderCam->resolution.x*renderCam->resolution.y; i++){
-        renderCam->image[i] = glm::vec3(0,0,0);
-      }
-      cudaDeviceReset(); 
-      finishedRender = false;
+			//clear image buffer and move onto next frame
+			targetFrame++;
+			iterations = 0;
+			for(int i=0; i<renderCam->resolution.x*renderCam->resolution.y; i++){
+				renderCam->image[i] = glm::vec3(0,0,0);
+			}
+			cudaDeviceReset(); 
+			finishedRender = false;
     }
   }
   
+}
+
+// Clear the image on CPU and set iterations to 0
+void clearImage() {
+  iterations = 0;
+  for(int i=0; i<renderCam->resolution.x*renderCam->resolution.y; i++){
+    renderCam->image[i] = glm::vec3(0,0,0);
+  }
+  finishedRender = false;
 }
 
 #ifdef __APPLE__
@@ -220,12 +228,45 @@ void runCuda(){
 
 	void keyboard(unsigned char key, int x, int y)
 	{
+		float step = 0.1; // camera step
 		std::cout << key << std::endl;
 		switch (key) 
 		{
-		   case(27):
+		   case(27): //Esc
 			   exit(1);
 			   break;
+			 case(97): //a
+				 renderCam->positions[0] += glm::vec3(1, 0, 0) * step;
+				 clearImage();
+				 break;
+			 case(119): //w
+				 renderCam->positions[0] += glm::vec3(0, 1, 0) * step;
+				 clearImage();
+				 break;
+			 case(100): //d
+				 renderCam->positions[0] += glm::vec3(-1, 0, 0) * step;
+				 clearImage();
+				 break;
+			 case(115): //s
+				 renderCam->positions[0] += glm::vec3(0, -1, 0) * step;
+				 clearImage();
+				 break;
+			 case(122): //z
+				 renderCam->positions[0] += glm::vec3(0, 0, -1) * step;
+				 clearImage();
+				 break;
+			 case(120): //x
+				 renderCam->positions[0] += glm::vec3(0, 0, 1) * step;
+				 clearImage();
+				 break;
+			 //case(91): //[
+				// renderCam->focal -= 0.5;
+				// clearImage();
+				// break;
+			 //case(93): //]
+				// renderCam->focal += 0.5;
+				// clearImage();
+				// break;
 		}
 	}
 
