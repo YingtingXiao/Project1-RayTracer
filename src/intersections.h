@@ -209,6 +209,7 @@ __host__ __device__ float sphereIntersectionTest(staticGeom sphere, ray r, glm::
   float t1 = firstTerm + squareRoot;
   float t2 = firstTerm - squareRoot;
   
+	bool inverseNormal = false;
   float t = 0;
   if (t1 < 0 && t2 < 0) {
       return -1;
@@ -216,6 +217,7 @@ __host__ __device__ float sphereIntersectionTest(staticGeom sphere, ray r, glm::
       t = min(t1, t2);
   } else {
       t = max(t1, t2);
+			inverseNormal = true; // since we are inside the sphere, we have to inverse the normal
   }
 
   glm::vec3 realIntersectionPoint = multiplyMV(sphere.transform, glm::vec4(getPointOnRay(rt, t), 1.0));
@@ -223,6 +225,9 @@ __host__ __device__ float sphereIntersectionTest(staticGeom sphere, ray r, glm::
 
   intersectionPoint = realIntersectionPoint;
   normal = glm::normalize(realIntersectionPoint - realOrigin);
+	if (inverseNormal) {
+		normal *= -1;
+	}
         
   return glm::length(r.origin - realIntersectionPoint);
 }
@@ -303,8 +308,15 @@ __host__ __device__ glm::vec3 getRandomPointOnCube(staticGeom cube, float random
 //TODO: IMPLEMENT THIS FUNCTION
 //Generates a random point on a given sphere
 __host__ __device__ glm::vec3 getRandomPointOnSphere(staticGeom sphere, float randomSeed){
+	thrust::default_random_engine rng(hash(randomSeed));
+	thrust::uniform_real_distribution<float> u01(0, PI*2);
+	thrust::uniform_real_distribution<float> u02(0, PI);
 
-  return glm::vec3(0,0,0);
+	float phi = u01(rng);
+	float theta = u02(rng);
+	float r = sphere.scale.x; // assume the sphere is uniformly scaled
+
+	return glm::vec3(r * sin(theta) * cos(phi), r * sin(theta) * sin(phi), r * cos(theta));
 }
 
 #endif
