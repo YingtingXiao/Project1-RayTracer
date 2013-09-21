@@ -29,6 +29,7 @@
 #include "raytraceKernel.h"
 #include "utilities.h"
 #include "scene.h"
+#include "fps.h" // for frame rate
 
 #if CUDA_VERSION >= 5000
     #include <helper_cuda.h>
@@ -41,6 +42,9 @@
 #endif
 
 using namespace std;
+
+// Fps tracker
+mmc::FpsTracker theFpsTracker;
 
 //-------------------------------
 //----------PATHTRACER-----------

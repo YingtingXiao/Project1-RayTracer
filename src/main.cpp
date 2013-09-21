@@ -104,8 +104,9 @@ void runCuda(){
 
   // Map OpenGL buffer object for writing from CUDA on a single GPU
   // No data is moved (Win & Linux). When mapped to CUDA, OpenGL should not use this buffer
-  
+
   if(iterations<renderCam->iterations){
+
     uchar4 *dptr=NULL;
     iterations++;
     cudaGLMapBufferObject((void**)&dptr, pbo);
@@ -142,7 +143,7 @@ void runCuda(){
       
       gammaSettings gamma;
       gamma.applyGamma = true;
-      gamma.gamma = 1.0/2.2;
+      gamma.gamma = 1.0;
       gamma.divisor = renderCam->iterations;
       outputImage.setGammaSettings(gamma);
       string filename = renderCam->imageName;
@@ -180,7 +181,6 @@ void clearImage() {
   for(int i=0; i<renderCam->resolution.x*renderCam->resolution.y; i++){
     renderCam->image[i] = glm::vec3(0,0,0);
   }
-  finishedRender = false;
 }
 
 #ifdef __APPLE__
@@ -207,6 +207,9 @@ void clearImage() {
 #else
 
 	void display(){
+		// Keep track of time
+    theFpsTracker.timestamp();
+
 		runCuda();
 
 		string title = "565Raytracer | " + utilityCore::convertIntToString(iterations) + " Iterations";
@@ -224,6 +227,8 @@ void clearImage() {
 
 		glutPostRedisplay();
 		glutSwapBuffers();
+
+		cout << "Framerate: " << theFpsTracker.fpsAverage() << endl;
 	}
 
 	void keyboard(unsigned char key, int x, int y)
