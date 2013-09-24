@@ -8,7 +8,7 @@ Fall 2013
 Due Thursday, 09/19/2013
 -------------------------------------------------------------------------------
 
-![alt tag](https://raw.github.com/YingtingXiao/Project1-RayTracer/master/screenshots/final.png)
+![alt tag](https://raw.github.com/YingtingXiao/Project1-RayTracer/master/screenshots/final.PNG)
 
 Features I’ve implemented:
 • All required features
