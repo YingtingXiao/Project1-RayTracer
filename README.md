@@ -7,7 +7,9 @@ Yingting Xiao
 
 ![alt tag](https://raw.github.com/YingtingXiao/Project1-RayTracer/master/screenshots/final.PNG)
 
-Features I’ve implemented:
+-------------------------------------------------------------------------------
+Features implemented:
+-------------------------------------------------------------------------------
 
 • All required features
 
@@ -26,7 +28,8 @@ Features I’ve implemented:
 • Refraction (not Fresnel so doesn’t look that good…)
 
 
-Additional screenshots (can also be found in the screenshots folder):
+Additional screenshots:
+-------------------------------------------------------------------------------
 
 1) Reflection + refraction
 
@@ -46,10 +49,13 @@ Additional screenshots (can also be found in the screenshots folder):
 
 
 Screen recording:
+-------------------------------------------------------------------------------
 
 https://vimeo.com/75074121
 
+
 Performance evaluation:
+-------------------------------------------------------------------------------
 
 (I used 3rd-party code: fps.h, fps.cpp, clock.h, timer.h for Fps tracking)
 
