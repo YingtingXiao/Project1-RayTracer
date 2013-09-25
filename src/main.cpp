@@ -207,8 +207,8 @@ void clearImage() {
 #else
 
 	void display(){
-		// Keep track of time
-    theFpsTracker.timestamp();
+		//// Keep track of time
+    //theFpsTracker.timestamp();
 
 		runCuda();
 
@@ -228,7 +228,7 @@ void clearImage() {
 		glutPostRedisplay();
 		glutSwapBuffers();
 
-		cout << "Framerate: " << theFpsTracker.fpsAverage() << endl;
+		//cout << "Framerate: " << theFpsTracker.fpsAverage() << endl;
 	}
 
 	void keyboard(unsigned char key, int x, int y)
