@@ -92,25 +92,6 @@ __host__ __device__ ray raycastFromCameraKernel(glm::vec2 resolution, float time
   return r;
 }
 
-// Determine if a randomly generated ray
-__host__ __device__  bool isReflectedRay(float randomSeed, float n1, float n2, glm::vec3 n, glm::vec3 d, glm::vec3 t) {
-	float rpar = (n2 * glm::dot(n, d) - n1 * glm::dot(n, t)) / (n2 * glm::dot(n, d) + n1 * glm::dot(n, t));
-	float rperp = (n1 * glm::dot(n, d) - n2 * glm::dot(n, t)) / (n1 * glm::dot(n, d) + n2 * glm::dot(n, t));
-
-	// compute proportion of the light reflected
-	float fr = 0.5 * (rpar * rpar + rperp * rperp);
-
-	// determine if ray is reflected according to the proportion
-	thrust::default_random_engine rng(hash(randomSeed));
-	thrust::uniform_real_distribution<float> u01(0,1);
-	if (u01(rng) <= fr) {
-		return true;
-	}
-	else {
-		return false;
-	}
-}
-
 //Kernel that blacks out a given image buffer
 __global__ void clearImage(glm::vec2 resolution, glm::vec3* image){
     int x = (blockIdx.x * blockDim.x) + threadIdx.x;
@@ -254,8 +235,9 @@ __global__ void raytraceRay(glm::vec2 resolution, float time, cameraData cam, gl
 						break;
 					}
 					else {
-						glm::vec3 VR, VT;
-						if (mtl.hasReflective && mtl.hasRefractive) {
+						bool hasReflective = mtl.hasReflective;
+						bool hasRefractive = mtl.hasRefractive;
+						if (hasReflective && hasRefractive) {
 							thrust::default_random_engine rng(hash(time * index));
 							thrust::uniform_real_distribution<float> u01(0,1);
 							float random = u01(rng);
