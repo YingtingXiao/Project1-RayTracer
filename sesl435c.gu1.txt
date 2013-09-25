@@ -1,0 +1,39 @@
+﻿Revert "trying to merge changes"
+
+This reverts commit 5796a59ef707eff6fd4dfe5061289bbfb8b6ef73.
+revert the previous commit
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# On branch master
+# Changes to be committed:
+#   (use "git reset HEAD <file>..." to unstage)
+#
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/565Raytracer.lastbuildstate
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/565Raytracer.log
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/CL.read.1.tlog
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/CL.write.1.tlog
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/cl.command.1.tlog
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/fps.obj
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/glslUtility.obj
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/image.obj
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/link-cvtres.read.1.tlog
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/link-cvtres.write.1.tlog
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/link-rc.read.1.tlog
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/link-rc.write.1.tlog
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/link.command.1.tlog
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/link.read.1.tlog
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/link.write.1.tlog
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/main.obj
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/raytraceKernel.cu.cache
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/scene.obj
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/stb_image.obj
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/stb_image_write.obj
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/utilities.obj
+#	deleted:    PROJ1_WIN/565Raytracer/Release (v5.5)/vc110.pdb
+#	deleted:    PROJ1_WIN/565Raytracer/test.0.bmp
+#	deleted:    PROJ1_WIN/Release (v5.5)/565Raytracer.exe
+#	deleted:    PROJ1_WIN/Release (v5.5)/565Raytracer.pdb
+#	deleted:    scenes/crazy_bw.txt
+#
+
